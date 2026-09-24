@@ -1,0 +1,1464 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.webmanifest">
+
+<title>Haruyacoin</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#f3f4f6;
+  color:#111827;
+}
+
+header{
+  background:#111827;
+  color:white;
+  padding:15px;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+
+.head{
+  max-width:1100px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+}
+
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:16px;
+}
+
+.card{
+  background:white;
+  padding:18px;
+  border-radius:16px;
+  margin:12px 0;
+  box-shadow:0 4px 18px #0001;
+}
+
+input,select{
+  width:100%;
+  padding:11px;
+  margin:6px 0 12px;
+  border:1px solid #ddd;
+  border-radius:9px;
+}
+
+button{
+  padding:10px 14px;
+  border:0;
+  border-radius:9px;
+  background:#111827;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  margin:3px;
+}
+
+.blue{background:#2563eb}
+.green{background:#059669}
+.red{background:#dc2626}
+.light{background:#e5e7eb;color:#111827}
+
+.hidden{display:none!important}
+
+.nav{
+  display:flex;
+  gap:5px;
+  overflow:auto;
+  margin-bottom:12px;
+}
+
+.nav button{
+  white-space:nowrap;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.stat{
+  font-size:28px;
+  font-weight:900;
+}
+
+.item{
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:12px;
+  margin:8px 0;
+}
+
+.muted{
+  color:#6b7280;
+  font-size:13px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border-bottom:1px solid #eee;
+  text-align:left;
+}
+
+@media(max-width:700px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  main{
+    padding:10px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header id="header" class="hidden">
+  <div class="head">
+    <b>🪙 Haruyacoin</b>
+    <b id="balance">0 pt</b>
+  </div>
+</header>
+
+<main>
+
+<!-- ログイン -->
+
+<section id="login" class="card">
+
+<h1>🪙 Haruyacoin</h1>
+
+<p class="muted">
+共通ポイントサービス
+</p>
+
+<div id="loginMsg"></div>
+
+<input
+  id="email"
+  type="email"
+  placeholder="メールアドレス"
+>
+
+<input
+  id="password"
+  type="password"
+  placeholder="パスワード"
+>
+
+<button onclick="login()">
+ログイン
+</button>
+
+<button class="light" onclick="signup()">
+アカウント作成
+</button>
+
+</section>
+
+
+<!-- アプリ -->
+
+<section id="app" class="hidden">
+
+<div class="nav">
+
+<button onclick="tab('home')">
+ホーム
+</button>
+
+<button onclick="tab('send')">
+送る
+</button>
+
+<button onclick="tab('history')">
+履歴
+</button>
+
+<button onclick="tab('gift')">
+ギフト
+</button>
+
+<button onclick="tab('shop')">
+ショップ
+</button>
+
+<button onclick="tab('apps')">
+連携アプリ
+</button>
+
+<button
+  id="adminButton"
+  class="hidden"
+  onclick="tab('admin')"
+>
+管理者
+</button>
+
+<button onclick="logout()">
+ログアウト
+</button>
+
+</div>
+
+
+<!-- ホーム -->
+
+<div id="home" class="page">
+
+<div class="grid">
+
+<div class="card">
+<div class="muted">
+残高
+</div>
+
+<div
+  class="stat"
+  id="homeBalance"
+>
+0 pt
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="muted">
+ランク
+</div>
+
+<div
+  class="stat"
+  id="rank"
+>
+ノーマル
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="muted">
+権限
+</div>
+
+<div
+  class="stat"
+  id="role"
+>
+user
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>
+プロフィール
+</h2>
+
+<input
+  id="displayName"
+  placeholder="表示名"
+>
+
+<input
+  id="username"
+  placeholder="ユーザー名"
+>
+
+<button onclick="saveProfile()">
+保存
+</button>
+
+<div id="profileMsg"></div>
+
+</div>
+
+</div>
+
+
+<!-- pt送信 -->
+
+<div
+  id="send"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+🔄 ptを送る
+</h2>
+
+<input
+  id="toUser"
+  placeholder="相手のユーザーUUID"
+>
+
+<input
+  id="amount"
+  type="number"
+  min="1"
+  placeholder="数量"
+>
+
+<input
+  id="note"
+  placeholder="メモ"
+>
+
+<button
+  class="blue"
+  onclick="sendPt()"
+>
+送信
+</button>
+
+<div id="sendMsg"></div>
+
+</div>
+
+</div>
+
+
+<!-- 履歴 -->
+
+<div
+  id="history"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+📜 履歴
+</h2>
+
+<div id="historyList"></div>
+
+</div>
+
+</div>
+
+
+<!-- ギフト -->
+
+<div
+  id="gift"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+🎁 ギフトコード
+</h2>
+
+<input
+  id="giftCode"
+  placeholder="ギフトコード"
+>
+
+<button
+  class="green"
+  onclick="redeem()"
+>
+受け取る
+</button>
+
+<div id="giftMsg"></div>
+
+</div>
+
+</div>
+
+
+<!-- ショップ -->
+
+<div
+  id="shop"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+🛍️ ショップ
+</h2>
+
+<div id="products"></div>
+
+</div>
+
+</div>
+
+
+<!-- 連携アプリ -->
+
+<div
+  id="apps"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+📱 連携アプリ
+</h2>
+
+<div id="appsList"></div>
+
+</div>
+
+</div>
+
+
+<!-- 管理者 -->
+
+<div
+  id="admin"
+  class="page hidden"
+>
+
+<div class="card">
+
+<h2>
+👑 管理者
+</h2>
+
+<p>
+管理者権限のみ利用できます。
+</p>
+
+<p class="muted">
+権限は user / admin の2種類だけです。
+</p>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+👥 ユーザー管理
+</h3>
+
+<div id="users"></div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+💰 pt増減
+</h3>
+
+<input
+  id="adminUid"
+  placeholder="ユーザーUUID"
+>
+
+<input
+  id="adminAmount"
+  type="number"
+  min="1"
+  placeholder="pt"
+>
+
+<input
+  id="reason"
+  placeholder="理由"
+>
+
+<button
+  class="green"
+  onclick="addPt()"
+>
+pt追加
+</button>
+
+<button
+  class="red"
+  onclick="removePt()"
+>
+pt減算
+</button>
+
+<div id="ptMsg"></div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+🏆 ランク・権限・停止
+</h3>
+
+<input
+  id="manageUid"
+  placeholder="ユーザーUUID"
+>
+
+<select id="newRank">
+
+<option>ノーマル</option>
+<option>ゴールド</option>
+<option>ダイヤモンド</option>
+<option>VIP</option>
+<option>プレミアム</option>
+<option>スペシャル</option>
+
+</select>
+
+<button
+  class="blue"
+  onclick="changeRank()"
+>
+ランク変更
+</button>
+
+<button onclick="changeRole('admin')">
+admin
+</button>
+
+<button
+  class="light"
+  onclick="changeRole('user')"
+>
+user
+</button>
+
+<button
+  class="red"
+  onclick="suspend(true)"
+>
+停止
+</button>
+
+<button
+  class="light"
+  onclick="suspend(false)"
+>
+停止解除
+</button>
+
+<div id="manageMsg"></div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+📋 管理ログ
+</h3>
+
+<div id="logs"></div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+/* =========================
+   Supabase
+========================= */
+
+const SUPABASE_URL =
+"https://cccjmmqihjuufqqkaehl.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_SdO6GHa3s0ij7e3shDyqdw_iOvZ_iom";
+
+const db =
+supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+
+/* =========================
+   基本
+========================= */
+
+let user = null;
+let profile = null;
+
+const $ =
+id => document.getElementById(id);
+
+const esc =
+value =>
+String(value ?? "")
+.replace(
+  /[&<>"']/g,
+  c => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[c])
+);
+
+const pt =
+value =>
+Number(value || 0)
+.toLocaleString("ja-JP")
++" pt";
+
+
+/* =========================
+   ログイン
+========================= */
+
+async function login(){
+
+  const result =
+  await db.auth.signInWithPassword({
+
+    email:
+    $("email").value,
+
+    password:
+    $("password").value
+
+  });
+
+  if(result.error){
+
+    $("loginMsg").textContent =
+    result.error.message;
+
+    return;
+  }
+
+  await start(
+    result.data.user
+  );
+}
+
+
+/* =========================
+   アカウント作成
+========================= */
+
+async function signup(){
+
+  const result =
+  await db.auth.signUp({
+
+    email:
+    $("email").value,
+
+    password:
+    $("password").value
+
+  });
+
+  if(result.error){
+
+    $("loginMsg").textContent =
+    result.error.message;
+
+    return;
+  }
+
+  if(result.data.user){
+
+    await start(
+      result.data.user
+    );
+
+  }else{
+
+    $("loginMsg").textContent =
+    "確認メールを確認してください。";
+
+  }
+}
+
+
+/* =========================
+   起動
+========================= */
+
+async function start(u){
+
+  user = u;
+
+  const result =
+  await db
+  .from("profiles")
+  .select("*")
+  .eq("id",u.id)
+  .single();
+
+  if(result.error){
+
+    $("loginMsg").textContent =
+    result.error.message;
+
+    return;
+  }
+
+  profile =
+  result.data;
+
+
+  if(profile.suspended){
+
+    await db.auth.signOut();
+
+    $("loginMsg").textContent =
+    "このアカウントは停止されています。";
+
+    return;
+  }
+
+
+  $("login")
+  .classList
+  .add("hidden");
+
+  $("app")
+  .classList
+  .remove("hidden");
+
+  $("header")
+  .classList
+  .remove("hidden");
+
+
+  if(profile.role === "admin"){
+
+    $("adminButton")
+    .classList
+    .remove("hidden");
+
+  }
+
+
+  $("displayName").value =
+  profile.display_name || "";
+
+  $("username").value =
+  profile.username || "";
+
+
+  await refresh();
+
+  tab("home");
+
+}
+
+
+/* =========================
+   ログアウト
+========================= */
+
+async function logout(){
+
+  await db.auth.signOut();
+
+  location.reload();
+
+}
+
+
+/* =========================
+   タブ
+========================= */
+
+function tab(id){
+
+  document
+  .querySelectorAll(".page")
+  .forEach(
+    element =>
+    element.classList.add("hidden")
+  );
+
+  $(id)
+  .classList
+  .remove("hidden");
+
+}
+
+
+/* =========================
+   更新
+========================= */
+
+async function refresh(){
+
+  const wallet =
+  await db
+  .from("wallets")
+  .select("balance")
+  .eq("user_id",user.id)
+  .single();
+
+
+  const balance =
+  wallet.data?.balance || 0;
+
+
+  $("balance").textContent =
+  pt(balance);
+
+  $("homeBalance").textContent =
+  pt(balance);
+
+  $("rank").textContent =
+  profile.rank;
+
+  $("role").textContent =
+  profile.role;
+
+
+  await loadHistory();
+  await loadProducts();
+  await loadApps();
+
+
+  if(profile.role === "admin"){
+
+    await loadUsers();
+    await loadLogs();
+
+  }
+
+}
+
+
+/* =========================
+   プロフィール
+========================= */
+
+async function saveProfile(){
+
+  const result =
+  await db.rpc(
+    "update_my_profile",
+    {
+      p_display_name:
+      $("displayName").value,
+
+      p_username:
+      $("username").value
+    }
+  );
+
+
+  $("profileMsg").textContent =
+  result.error
+  ? result.error.message
+  : "プロフィールを保存しました。";
+
+}
+
+
+/* =========================
+   pt送信
+========================= */
+
+async function sendPt(){
+
+  const result =
+  await db.rpc(
+    "transfer_pt",
+    {
+      p_to_user:
+      $("toUser").value,
+
+      p_amount:
+      Number($("amount").value),
+
+      p_note:
+      $("note").value
+    }
+  );
+
+
+  $("sendMsg").textContent =
+  result.error
+  ? result.error.message
+  : "ptを送信しました。";
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   履歴
+========================= */
+
+async function loadHistory(){
+
+  const result =
+  await db
+  .from("transactions")
+  .select("*")
+  .eq("user_id",user.id)
+  .order(
+    "created_at",
+    {
+      ascending:false
+    }
+  )
+  .limit(50);
+
+
+  if(!result.data?.length){
+
+    $("historyList").textContent =
+    "履歴はありません。";
+
+    return;
+  }
+
+
+  $("historyList").innerHTML =
+  result.data
+  .map(
+    item => `
+    <div class="item">
+
+      <b>
+      ${esc(item.type)}
+      </b>
+
+      ${Number(item.amount) >= 0 ? "+" : ""}
+      ${pt(item.amount)}
+
+      <br>
+
+      <span class="muted">
+      ${esc(item.note || "")}
+      </span>
+
+    </div>
+    `
+  )
+  .join("");
+
+}
+
+
+/* =========================
+   ギフト
+========================= */
+
+async function redeem(){
+
+  const result =
+  await db.rpc(
+    "redeem_gift_code",
+    {
+      p_code:
+      $("giftCode").value
+    }
+  );
+
+
+  $("giftMsg").textContent =
+  result.error
+  ? result.error.message
+  : "ギフトコードを受け取りました。";
+
+
+  if(!result.error){
+
+    $("giftCode").value = "";
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   ショップ
+========================= */
+
+async function loadProducts(){
+
+  const result =
+  await db
+  .from("shop_products")
+  .select("*")
+  .eq("enabled",true)
+  .order(
+    "created_at",
+    {
+      ascending:false
+    }
+  );
+
+
+  if(!result.data?.length){
+
+    $("products").textContent =
+    "商品はありません。";
+
+    return;
+  }
+
+
+  $("products").innerHTML =
+  result.data
+  .map(
+    product => `
+
+    <div class="item">
+
+      <b>
+      ${esc(product.icon || "🛍️")}
+      ${esc(product.name)}
+      </b>
+
+      <p>
+      ${esc(product.description || "")}
+      </p>
+
+      <b>
+      ${pt(
+        product.medal_price ??
+        product.price_medals
+      )}
+      </b>
+
+    </div>
+
+    `
+  )
+  .join("");
+
+}
+
+
+/* =========================
+   連携アプリ
+========================= */
+
+async function loadApps(){
+
+  const result =
+  await db
+  .from("linked_apps")
+  .select("*")
+  .eq("enabled",true);
+
+
+  if(!result.data?.length){
+
+    $("appsList").textContent =
+    "連携アプリはありません。";
+
+    return;
+  }
+
+
+  $("appsList").innerHTML =
+  result.data
+  .map(
+    app => `
+
+    <div class="item">
+
+      <b>
+      ${esc(app.icon || "📱")}
+      ${esc(app.name)}
+      </b>
+
+      <br>
+
+      <span class="muted">
+      ${esc(app.description || "")}
+      </span>
+
+    </div>
+
+    `
+  )
+  .join("");
+
+}
+
+
+/* =========================
+   管理者：ユーザー
+========================= */
+
+async function loadUsers(){
+
+  const result =
+  await db
+  .from("profiles")
+  .select(
+    "id,email,display_name,username,role,rank,suspended"
+  )
+  .order(
+    "created_at",
+    {
+      ascending:false
+    }
+  );
+
+
+  $("users").innerHTML =
+  `
+  <table>
+
+  <tr>
+  <th>ユーザー</th>
+  <th>ランク</th>
+  <th>権限</th>
+  <th>状態</th>
+  </tr>
+
+  ${
+    (result.data || [])
+    .map(
+      u => `
+
+      <tr>
+
+      <td>
+      ${esc(
+        u.display_name ||
+        u.username ||
+        u.email
+      )}
+
+      <br>
+
+      <small>
+      ${esc(u.id)}
+      </small>
+
+      </td>
+
+      <td>
+      ${esc(u.rank)}
+      </td>
+
+      <td>
+      ${esc(u.role)}
+      </td>
+
+      <td>
+      ${u.suspended
+        ? "停止"
+        : "利用中"}
+      </td>
+
+      </tr>
+
+      `
+    )
+    .join("")
+  }
+
+  </table>
+  `;
+
+}
+
+
+/* =========================
+   管理者：pt追加
+========================= */
+
+async function addPt(){
+
+  const result =
+  await db.rpc(
+    "admin_add_pt",
+    {
+      p_user_id:
+      $("adminUid").value,
+
+      p_amount:
+      Number($("adminAmount").value),
+
+      p_reason:
+      $("reason").value
+    }
+  );
+
+
+  $("ptMsg").textContent =
+  result.error
+  ? result.error.message
+  : "ptを追加しました。";
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   管理者：pt減算
+========================= */
+
+async function removePt(){
+
+  const result =
+  await db.rpc(
+    "admin_remove_pt",
+    {
+      p_user_id:
+      $("adminUid").value,
+
+      p_amount:
+      Number($("adminAmount").value),
+
+      p_reason:
+      $("reason").value
+    }
+  );
+
+
+  $("ptMsg").textContent =
+  result.error
+  ? result.error.message
+  : "ptを減算しました。";
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   管理者：ランク
+========================= */
+
+async function changeRank(){
+
+  const result =
+  await db.rpc(
+    "admin_change_rank",
+    {
+      p_user_id:
+      $("manageUid").value,
+
+      p_rank:
+      $("newRank").value
+    }
+  );
+
+
+  $("manageMsg").textContent =
+  result.error
+  ? result.error.message
+  : "ランクを変更しました。";
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   管理者：権限
+========================= */
+
+async function changeRole(role){
+
+  const result =
+  await db.rpc(
+    "admin_change_role",
+    {
+      p_user_id:
+      $("manageUid").value,
+
+      p_role:
+      role
+    }
+  );
+
+
+  $("manageMsg").textContent =
+  result.error
+  ? result.error.message
+  : "権限を変更しました。";
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   管理者：停止
+========================= */
+
+async function suspend(value){
+
+  const result =
+  await db.rpc(
+    "admin_set_suspended",
+    {
+      p_user_id:
+      $("manageUid").value,
+
+      p_suspended:
+      value
+    }
+  );
+
+
+  $("manageMsg").textContent =
+  result.error
+  ? result.error.message
+  : (
+    value
+    ? "アカウントを停止しました。"
+    : "停止を解除しました。"
+  );
+
+
+  if(!result.error){
+
+    await refresh();
+
+  }
+
+}
+
+
+/* =========================
+   管理ログ
+========================= */
+
+async function loadLogs(){
+
+  const result =
+  await db
+  .from("audit_logs")
+  .select("*")
+  .order(
+    "created_at",
+    {
+      ascending:false
+    }
+  )
+  .limit(100);
+
+
+  $("logs").innerHTML =
+  (result.data || [])
+  .map(
+    log => `
+
+    <div class="item">
+
+      <b>
+      ${esc(log.action)}
+      </b>
+
+      <br>
+
+      <span class="muted">
+      ${esc(log.details || "")}
+      </span>
+
+    </div>
+
+    `
+  )
+  .join("")
+  ||
+  "ログはありません。";
+
+}
+
+
+/* =========================
+   セッション確認
+========================= */
+
+db.auth
+.getSession()
+.then(
+  result => {
+
+    if(result.data.session){
+
+      start(
+        result.data.session.user
+      );
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
